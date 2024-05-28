@@ -352,6 +352,48 @@ console.log(JSON.stringify(ast, null, 2));
 }
 ```
 
+字段注释
+```code
+// 顶层结构
+type: 节点类型
+    Program: 表示程序
+    VariableDeclaration: 表示变量声明
+    FunctionDeclaration: 函数声明
+        expression
+        generator: 回调函数是生成表达式。
+        async
+        params: 函数参数数组，这里为空数组表示无参数。
+        body: 函数体
+    ExpressionStatement: 表达式
+    BlockStatement: 块表达式
+        body: 包含语句块内语句的数组。
+    CallExpression: 函数调用
+        callee: 被调用的函数
+        arguments: 参数
+    MemberExpression: 对象访问的属性
+    Property: 
+        描述对象的各种特性
+    BinaryExpression: 二次元表达式
+        left
+        operator
+        right
+    ReturnStatement: 返回值
+    ObjectExpression: 对象表达式
+    ArrayExpression
+    ...
+
+start: 节点在源代码中的起始位置（字符索引）。
+end: 节点在源代码中的结束位置（字符索引）。
+body: 包含程序主体的数组，每个元素代表一个语句或声明。
+declarations: 包含一个或多个变量声明的数组。
+kind: 变量类型
+    const
+    let
+    var
+    init: 初始化属性
+
+```
+
 ## AST 优化
 
 - AST 优化是一个可选的步骤
@@ -374,6 +416,10 @@ console.log(JSON.stringify(ast, null, 2));
 5 Intermediate Representation 生成与优化
    内联、恒值折叠和死代码消除等优化步骤会生成一个更高级的中间表示（IR）。
 ...
+
+### 工具
+
+https://astexplorer.net/
 
 ## 代码生成
 
@@ -402,6 +448,11 @@ foo();
 - 函数作用域是指在函数调用时定义的作用域
 - 函数作用域是由函数的调用决定的
 - 函数作用域是动态的，会随着函数的调用而改变
+
+举例：
+```js
+
+```
 
 ## 作用域链
 
