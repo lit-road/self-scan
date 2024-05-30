@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+        // 指定变量文件的根路径
+        "baseUrl": "./",
+        "target": "es6",
+        "module": "commonjs",
+        "outDir": "./dist",
+        "strict": true,
+        "esModuleInterop": true,
+        // 
+        // 允许导入 js，默认只导入ts、tsx
+        "allowJs": true,
+        // 装饰器
+        "experimentalDecorators": true,
+        // 模块解决策略
+        "moduleResolution": "node",
+        // 显示判断 any
+        "noImplicitAny": true,
+        // API扩展
+        "lib": [
+            "es2015",
+            "dom"
+        ],
+        // 美化 错误信息
+        "pretty": true,
+        // 生成sourceMap
+        "sourceMap": true,
+        // 高版本浏览器 推荐使用
+        // 不必转为低级循环
+        "downlevelIteration": true,
+    },
+    // 需要编译的路径
+    "include": [
+        "main.ts",
+        "./src/**/*.ts"
+    ],
+    // 不需要编译的路径
+    "exclude": [
+        "node_modules"
+    ]
+}
