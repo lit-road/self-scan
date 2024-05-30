@@ -1,0 +1,55 @@
+{
+    "cells": [
+        {
+            "language": "markdown",
+            "source": [
+                "# JS 主要特性和新特性\n\n## Promise \n\n```js\nconst promise = new MyPromise((resolve, reject) => {\n   setTimeout(() => {\n    resolve('success');\n  }, 1000);\n });\n```"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "class MyPromise {\n  private status: \"pending\" | \"fulfilled\" | \"rejected\" = \"pending\";\n  private onFulfilledCallbacks: Function[] = [];\n  private onRejectedCallbacks: Function[] = [];\n  private value: any;\n  private reason: any;\n  constructor(fn) {\n    // 执行异步函数\n    // 将结果处理方法封装到resolve和reject中\n    try {\n      // fn(this.resolve, this.reject);\n      fn(this.resolve.bind(this), this.reject.bind(this));\n    } catch (error) {\n      this.reject(error);\n    }\n  }\n\n  // 失败的参数不一定有,但是 ts 不允许传入一个参数，所以应该修改为\n  then(onFulfilled: any, onRejected?: any) {\n    return new MyPromise((resolve, reject) => {\n      const fulfilledCallbacks = () => {\n        debugger;\n        try {\n          if (!onFulfilled) return resolve(this.value);\n          const result = onFulfilled(this.value);\n          console.log(\"结束 result\", result);\n          resolve(result);\n        } catch (error) {\n          reject(error);\n        }\n      };\n      const rejectedCallbacks = () => {\n        try {\n          if (!onRejected) return reject(this.value);\n          const result = onRejected(this.value);\n          reject(result);\n        } catch (error) {\n          reject(error);\n        }\n      };\n\n      if (this.status === \"pending\") {\n        this.onFulfilledCallbacks.push(onFulfilled);\n        this.onRejectedCallbacks.push(onRejected);\n      } else if (this.status === \"fulfilled\") {\n        fulfilledCallbacks();\n      } else if (this.status === \"rejected\") {\n        rejectedCallbacks();\n      }\n    });\n  }\n\n  // 封装成功结果处理方法\n  private resolve(value) {\n    console.log(\"resolve\", value);\n    debugger;\n    if (this.status === \"pending\") {\n      // 将状态改为成功\n      this.status = \"fulfilled\";\n      this.value = value;\n      // 执行成功回调\n      this.onFulfilledCallbacks.forEach((callback) => {\n        try {\n          this.value = callback(this.value);\n        } catch (error) {\n          this.reject(error);\n        }\n        console.log(\"结束 this\", this);\n      });\n      this.onFulfilledCallbacks = [];\n      return this.value;\n    }\n  }\n\n  private reject(reason) {\n    console.log(\"reject\", reason);\n\n    // 将状态改为失败\n    this.status = \"rejected\";\n    this.reason = reason;\n    // 执行失败回调\n    this.onRejectedCallbacks.forEach((callback) => {\n      try {\n        this.reason = callback(this.reason);\n      } catch (error) {\n        this.reject(error);\n      }\n    });\n    this.onRejectedCallbacks = [];\n    return this.reason;\n  }\n}\nconst promise = new MyPromise((resolve, reject) => {\n  setTimeout(() => {\n    resolve(\"success\");\n    return \"setTimeout resolve\";\n  }, 1000);\n});\npromise.then((res) => {\n  console.log(res, \"第一次\");\n  return res + 123;\n});\npromise.then((res) => {\n  console.log(res, \"第二次\");\n  return res + 456;\n});\nconsole.log(promise);\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stderr",
+                            "value": [
+                                "MyPromise {",
+                                "  status: 'pending',",
+                                "  onFulfilledCallbacks: [ [Function (anonymous)], [Function (anonymous)] ],",
+                                "  onRejectedCallbacks: [ undefined, undefined ],",
+                                "  value: undefined,",
+                                "  reason: undefined",
+                                "}",
+                                "resolve success",
+                                "TypeError: Cannot read properties of undefined (reading 'status')",
+                                "    at resolve (<Cell 2> [65, 12])",
+                                "    at Timeout._onTimeout (<Cell 2> [103, 15])",
+                                "    at listOnTimeout (node:internal/timers:573:17)",
+                                "    at processTimers (node:internal/timers:514:7)",
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stderr",
+                            "value": [
+                                "<Cell 2> :58",
+                                "                }",
+                                "                 ^",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

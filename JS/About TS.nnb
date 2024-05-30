@@ -1,0 +1,118 @@
+{
+    "cells": [
+        {
+            "language": "markdown",
+            "source": [
+                "# TypeScript\n\n- [TypeScript Playground](https://www.typescriptlang.org/play/)\n- [TypeScript in 5 minutes](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html)\n\n## 类型\n\n- `number`: represents numeric values\n- `string`: represents textual values\n- `boolean`: represents true/false values\n- `null`: represents the absence of any object value\n- `undefined`: represents the absence of any value\n\n- `object`: represents non-primitive types, such as arrays, functions, and objects\n- `array`: represents an ordered list of values of a specific type\n- `tuple`: represents an array with a fixed number of elements, each with a specific type\n- `enum`: represents a set of named constants\n- `any`: represents any type, allowing you to opt-out of type checking\n- `void`: represents the absence of any type, often used as the return type of functions that don't return a value\n- `unknown`: Represents a type that we don't know. It's a safe type, we can't directly operate on it, we can only perform type assertions or type checks on it.\n- `never`: Represents a type that will never occur. For example, if a function always throws an error, then its return type is never\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const log = (...res) => {\n  console.log(`====================\\n`, [...res].join('\\n'), '\\n====================');\n}\n// TS 基础类型\n// number\nlet num: number;\n// string\nlet str: string;\n// boolean\nlet bool: boolean;\n// null\nlet nul: null;\n// undefined\nlet und: undefined;\n\n// object\nlet obj: object;\n// array\nlet arr: number[];\nlet arr2: Array<number>;\n// tuple\nlet tuple: [number, string];\ntuple = [1, '1'];\ntuple.push(2);\nlog(tuple);\n\n// enum : 枚举, 定义有限常量\nenum Roles {\n  SUPER_ADMIN,\n  ADMIN,\n  USER\n}\nlet role = Roles.SUPER_ADMIN;\nlet role2 = Roles[0];\nlet role3 = Roles[\"USER\"];\nlog(role, role2, role3);\n\n// any\nlet any: any;\n// void\nfunction fn(): void {\n  console.log('void');\n}\n// unknown\nlet unknown: unknown;\n// never\nfunction error(message: string): never {\n  throw new Error(message);\n}\n\n// 类型复用\ntype num = number;\ntype str = string;\ntype A = num | str;\ntype B = num & str; // 实例时冲突\nlet b: B = 1;       // @@ts-ignore\nlog(b);\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "====================",
+                                " 1,1,2 ",
+                                "====================",
+                                "====================",
+                                " 0",
+                                "SUPER_ADMIN",
+                                "2 ",
+                                "====================",
+                                "====================",
+                                " 1 ",
+                                "====================",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 结构、自定义类型、抽象类型、行为抽象\n\n- interface"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// interface\ninterface Point {\n    x: number,\n    y: number,\n    long(): number,\n    [propName: string]: string | number | Function,\n    readonly z: number,\n}\n\nlet point: Point = {\n    x: 1,\n    y: 2,\n    long() {\n        return this.x + this.y;\n    },\n    z: 3,\n    getStart() {\n        return this.x;\n    }\n}\n\ninterface Line {\n    constructor: Function,\n    start: Point,\n    end: Point,\n    long(): number,\n}\n\nclass Line implements Line {\n    constructor(start: Point, end: Point) {\n        this.start = start;\n        this.end = end;\n    }\n    long() {\n        return this.start.long() + this.end.long();\n    }\n}\n\ninterface cycle extends Point {\n    radius: number,\n    long(): number,\n}\n\nclass Cycle implements cycle {\n    radius: number;\n    x: number;\n    y: number;\n    z: number;\n    constructor(radius: number) {\n        this.radius = radius;\n    }\n    [propName: string]: string | number | Function;\n    long() {\n        return 2 * Math.PI * this.radius;\n    }\n    getStart() {\n        return this.x;\n    }\n}\n\nlet cycle = new Cycle(1);\ncycle['new'] = 'new';\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 类型转换、判断\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// TS 类型转换、类型断言\nlet str2: string = '1';\nlet num2: number = <number><any>str2;\nlet num3: number = str2 as any as number;\nlet num4: number = str2 as unknown as number; // 类型检查\nlet num5: number = Number(str2); // 推荐\n\n// any 和 unknown 的区别\n// 1、any 可以赋值给任意类型，unknown 不行\n// 2、unknown 赋值需要进行类型断言、或者是类型检查\nlet any2: any;\nlet unknown2: unknown;\nlet str3: string = any2;\nlet str4: string;\n//   str4 = unknown2; // 报错\nif(typeof unknown2 === 'string') {\n    let str4: string = unknown2;\n}\n\n// TS 告诉编译器，这个值在运行阶段不为空\nlet str5: string | null | undefined;\nlet str6: string = str5!;\n\n\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 方法、类相关\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// 重载\nfunction add(a: number, b: number): number;\nfunction add(a: string, b: string): string;\nfunction add(a: any, b: any): any {\n    return a + b;\n}\n\n// add(1, \"2\");\n\n// 泛型 !讨厌\nfunction createArray<T, U>(length: number, value: T, vv?: U): T[] {\n    // let arr: Array<number> = [];\n    let arr: Array<T> = [];\n    for (let i = 0; i < length; i++) {\n        arr[i] = value;\n    }\n    return arr;\n}\n\ncreateArray(3, \"x\");\n// <> 中给泛型定义\n// createArray<Number, String>(3, 'x');\n\ninterface Log {\n    log<T>(value: T): T;\n}\n\n// 装饰器\nfunction logClass<T>(target: Constructor, value: T): void {\n    console.log(target);\n    new target('这里是装饰器 触发构造体');\n    target.prototype.log = function <U>(log: U) {\n        console.log(\">>>\", this, value, log);\n        // return log;\n    };\n}\n\n@logClass\nclass Log implements Log {\n    constructor(something?: string) {\n        console.log(`${something!} constructor done`);\n    }\n    ppp(num: number) {\n        console.log('ppp' + num);\n        this.log(num)\n    }\n}\n\nlet log1 = new Log();\nlog1.ppp(345);"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "[class Log]",
+                                "这里是装饰器 触发构造体 + 'constructor done'",
+                                "undefined + 'constructor done'",
+                                "ppp345",
+                                ">>> Log {} undefined 345",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// 更改构造体的例子\n\n// new 为TS 关键字\ntype Constructor<T = {}> = new (...args: any[]) => T;\nfunction LogInstantiationTime(target: Constructor): any {\n    // 保存原来的构造函数\n    const originalConstructor = target;\n\n    // 一个新的构造函数，用于包装原来的构造函数\n    function newConstructor(...args: any[]) {\n        console.log(\n            `Instance of ${originalConstructor.name\n            } created at ${new Date().toISOString()}`\n        );\n        return new originalConstructor(...args);\n    }\n\n    // 复制原来的构造函数的原型\n    newConstructor.prototype = originalConstructor.prototype;\n\n    // 返回新的构造函数\n    return newConstructor as any;\n}\n\n// 需要修改ts 配置文件\n@LogInstantiationTime\nclass MyClass {\n    constructor(public name: string) {\n        console.log(`MyClass instance created with name: ${name}`);\n    }\n}\n\nconst instance = new MyClass(\"TypeScript\");\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "Instance of MyClass created at 2024-05-30T06:08:09.070Z",
+                                "MyClass instance created with name: TypeScript",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

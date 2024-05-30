@@ -1,0 +1,301 @@
+{
+    "cells": [
+        {
+            "language": "markdown",
+            "source": [
+                "# js 是如何执行的\n\n\n## 分词/词法分析\n\n> 源码位置\n> https://github.com/v8/v8/blob/main/src/parsing/scanner.cc\n\n- 将字符串分解成有意义的代码块，这些代码块被称为词法单元\n- 例如：var a = 2; 将被分解为 var、a、=、2、;\n- 分词器会忽略空格和换行符\n- 词法单元是由一种数据结构组成，称为词法单元流\n- 词法单元流是一个由一个个词法单元组成的数组\n- 词法单元流是由分词器生成的\n- 词法单元流是一个有序的数组\n\n举例：\n```js\nvar a = 0;\nfunction foo() {\n    const b = \"2\"\n    console.log(a + b);\n    return [a, b, {a, b}];\n}\n\nfoo();\n```\n词法分析如下：\n```js\n[\n    \"var\", \"a\", \"=\", \"0\", \";\",\n    \"function\", \"foo\", \"(\", \")\", \"{\",\n    \"const\", \"b\", \"=\", \"\\\"2\\\"\", \";\",\n    \"console\", \".\", \"log\", \"(\", \"a\", \"+\", \"b\", \")\", \";\",\n    \"return\", \"[\", \"a\", \",\", \"b\", \",\", \"{\", \"a\", \",\", \"b\", \"}\", \"]\", \";\",\n    \"}\", \"foo\", \"(\", \")\", \";\"\n]\n```\n\n验证：\n\n> node 21\n\n```js\nconst acorn = require(\"acorn\");\nconst tokens = acorn.tokenizer(`\nvar a = 0;\nfunction foo() {\n    const b = \"2\";\n    console.log(a + b);\n    return [a, b, {a, b}];\n}\nfoo();\n`);\n\nlet tokenArray = [];\nwhile (true) {\n    const token = tokens.getToken();\n    if (token.type.label === \"eof\") break;\n    tokenArray.push(token.value || token.type.label);\n}\nconsole.log(tokens)\nconsole.log(tokenArray);\n\n// output：\n[\n    'var',    'a',        '=',     'num',\n    ';',      'function', 'foo',   '(',\n    ')',      '{',        'const', 'b',\n    '=',      '2',        ';',     'console',\n    '.',      'log',      '(',     'a',\n    '+',      'b',        ')',     ';',\n    'return', '[',        'a',     ',',\n    'b',      ',',        '{',     'a',\n    ',',      'b',        '}',     ']',\n    ';',      '}',        'foo',   '(',\n    ')',      ';'\n]\n```\n\n可以发现 acorn 生成的 token 与我们手动分词的结果基本一致。\n但是 0 被转为 num 。\n\n## 解析/语法分析\n\n> 源码位置\n> https://github.com/v8/v8/blob/main/src/ast/ast.cc\n\n- 将词法单元流转换为抽象语法树（AST）\n- AST 是一个由节点组成的树状结构\n- AST 是由解析器生成的\n- AST 生成的同时，会进行Scope Analysis\n- Scope Analysis 会生成一个 Scope Tree，用于表示变量的作用域\n- Scope Analysis 会提升变量的声明，将变量声明提升到作用域的顶部\n- Scope Analysis 会将变量的引用与声明关联起来，\n\n举例：\n```js\nvar a = 0;\nfunction foo() {\n    const b = \"2\"\n    console.log(a + b);\n    return [a, b, {a, b}];\n}\n\nfoo();\n```\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// 验证\nconst acorn = require(\"acorn\");\nconst code = `\nvar a = 0;\nfunction foo() {\n    const b = \"2\";\n    console.log(a + b);\n    return [a, b, {a, b}];\n}\nfoo();\n`;\nconst tokens = acorn.tokenizer(code);\n\nlet tokenArray = [];\nwhile (true) {\n  const token = tokens.getToken();\n  if (token.type.label === \"eof\") break;\n  tokenArray.push(token.value || token.type.label);\n}\n\nconsole.log(tokenArray);\n\nconst ast = acorn.parse(code, { ecmaVersion: 2020 });\nconsole.log(JSON.stringify(ast, null, 2));\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.error",
+                            "value": {
+                                "name": "Error",
+                                "message": "Cannot find module 'acorn'\nRequire stack:\n- <repl>",
+                                "stack": "    at Function.Module._resolveFilename (node:internal/modules/cjs/loader:1142:15)\n    at Function.Module._resolveFilename.sharedData.moduleResolveFilenameHook.installedValue [as _resolveFilename] (/home/ez/.vscode-server/extensions/donjayamanne.typescript-notebook-2.0.6/resources/scripts/node_modules/@cspotcode/source-map-support/source-map-support.js:679:30)\n    at Function.Module._load (node:internal/modules/cjs/loader:983:27)\n    at Function._._load (/home/ez/.vscode-server/extensions/donjayamanne.typescript-notebook-2.0.6/out/extension/server/index.js:2:115372)\n    at Module.require (node:internal/modules/cjs/loader:1230:19)\n    at require (node:internal/modules/helpers:179:18)\n    at <Cell 2> [2, 0]\n    at <Cell 2> [24, 46]\n    at Script.runInContext (node:vm:148:12)\n    at Script.runInNewContext (node:vm:153:17)"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "字段注释\n```code\n// 顶层结构\ntype: 节点类型\n    Program: 表示程序\n    VariableDeclaration: 表示变量声明\n    FunctionDeclaration: 函数声明\n        expression\n        generator: 回调函数是生成表达式。\n        async\n        params: 函数参数数组，这里为空数组表示无参数。\n        body: 函数体\n    ExpressionStatement: 表达式\n    BlockStatement: 块表达式\n        body: 包含语句块内语句的数组。\n    CallExpression: 函数调用\n        callee: 被调用的函数\n        arguments: 参数\n    MemberExpression: 对象访问的属性\n    Property: \n        描述对象的各种特性\n    BinaryExpression: 二次元表达式\n        left\n        operator\n        right\n    ReturnStatement: 返回值\n    ObjectExpression: 对象表达式\n    ArrayExpression\n    ...\n\nstart: 节点在源代码中的起始位置（字符索引）。\nend: 节点在源代码中的结束位置（字符索引）。\nbody: 包含程序主体的数组，每个元素代表一个语句或声明。\ndeclarations: 包含一个或多个变量声明的数组。\nkind: 变量类型\n    const\n    let\n    var\n    init: 初始化属性\n\n```\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## AST 优化\n\n- AST 优化是一个可选的步骤\n\n\n### 基本转换、优化步骤\n\n1 语法树遍历\n引擎会遍历AST节点，并根据特定规则进行转换。例如，某些语法糖（如箭头函数、解构赋值等）会被转换成更基本的结构。\n\n2 内联扩展（Inlining）\n内联扩展是一种优化技术，将被频繁调用的小函数的代码内联到调用处，减少函数调用开销。\n\n3 恒值折叠（Constant Folding）\n在这个阶段，编译器会计算可以在编译时确定的常量表达式。例如，将2 + 2直接替换为4。\n\n4 死代码消除（Dead Code Elimination）\n编译器会删除那些永远不会被执行的代码。例如，if (false) { ... }内的代码块会被移除。\n\n5 Intermediate Representation 生成与优化\n   内联、恒值折叠和死代码消除等优化步骤会生成一个更高级的中间表示（IR）。\n...\n\n### 工具\n\nhttps://astexplorer.net/\n\n## 代码生成\n\n- 将优化后的AST转换为机器码\n- 机器码是一种可以被计算机直接执行的代码"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "\n# js 中高大上的专有名词 （术语）\n\n## 词法作用域\n\n- 词法作用域是指在代码编写时定义的作用域\n- 词法作用域是由代码的结构决定的\n- 词法作用域是静态的，不会随着代码的执行而改变"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "var a = 0;\nfunction foo() {\n  console.log('i can to access a:', a);\n}\nfoo();\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "i can to access a: 0",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 函数（动态）作用域\n\n- 函数作用域是指在函数调用时定义的作用域\n- 函数作用域是由函数的调用决定的\n- 函数作用域是动态的，会随着函数的调用而改变"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                ""
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 作用域链\n\n- 作用域链是一个由作用域组成的链表\n- 作用域链是由作用域嵌套关系决定的"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "var a = 0;\nvar global = \"www\"\nfunction foo() {\n    var b = 1;\n    global = \"inside foo\"\n    function bar() {\n        var c = 2;\n        var global = \"inside bar\"\n        console.log(a, b, c, global);\n    }\n    console.log('bar before:', global)\n    bar();\n    console.log('bar after:', global)\n}\nconsole.log('foo before:', global)\nfoo();\nconsole.log('foo after:', global)\n// foo 通过作用域链，更改了全局变量 global 的值\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "foo before: www",
+                                "bar before: inside foo",
+                                "0 1 2 inside bar",
+                                "bar after: inside foo",
+                                "foo after: inside foo",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 闭包\n\n- 闭包是指一个函数和其相关的引用环境\n- 闭包可以访问其引用环境中的变量\n\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "function createCounter() {\n  let count = 0;\n  return function () {\n    return count++;\n  };\n}\n\nconst counter = createCounter();\nconsole.log(counter()); // 输出 0\nconsole.log(counter()); // 输出 1\nconsole.log(counter()); // 输出 2\n\n// 闭包的应用场景\n// 1. 封装私有（实例私有、函数私有）变量\n// 2. 模块化\n\nfunction loadData(url, callback) {\n  // 假设这里是一个异步请求\n  // ...\n\n  // 模拟异步结果\n  setTimeout(() => {\n    const data = \"Data from \" + url;\n    callback(data);\n  }, 1000);\n}\n\nfunction processData(data) {\n  console.log(data);\n}\n\n// 使用闭包确保每次请求使用正确的回调函数\nfunction getDataForUrl(url) {\n  return function (callback) {\n    loadData(url, callback);\n  };\n}\n\n// 调用示例\ngetDataForUrl(\"https://example.com\")(processData);\ngetDataForUrl(\"https://another-example.com\")(processData);\n\n\n// 闭包的缺点\n// 1. 会造成内存泄漏\n// 举例：\n// 上面的 count 变量，因为闭包引用了 count 变量，导致 count 变量无法被垃圾回收机制回收\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "0",
+                                "1",
+                                "2",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "# 历史上的JS\n\n## 历史上的 JS 特性\n\nJavaScript 是一门历史悠久的编程语言，经历了多个版本和演变过程。以下是一些历史上的 JS 特性：\n\n1. ECMAScript 1 (1997): 最初的 ECMAScript 标准，定义了基本的语法和数据类型。\n\n2. ECMAScript 2 (1998): 引入了正则表达式、异常处理和更多的数据类型。\n\n3. ECMAScript 3 (1999): 引入了严格模式、JSON 对象、新的数组方法和更多的语言特性。\n\n4. ECMAScript 4 (未发布): 该版本计划引入类、模块和更多的面向对象特性，但最终被放弃。\n\n5. ECMAScript 5 (2009): 引入了严格模式的改进、新的数组方法、JSON 支持和更多的语言特性。\n\n6. ECMAScript 6 (2015): 也被称为 ES2015 或 ES6，引入了箭头函数、类、模块、解构赋值和更多的语言特性。\n\n7. ECMAScript 2016-2022: 每年都有新的 ECMAScript 版本发布，引入了许多新的语言特性和改进。\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## JS 在对象编程上的探索 -- 继承\n\n### 远古"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "function Parsent(name, age) {\n    this.name = name;\n    this.age = age;\n    this.say = function () {\n        console.log('hello');\n    }\n}\n\n// 原型继承 -- 扩展原型\nParsent.prototype.getName = function () {\n    return this.name;\n}\n\nParsent.prototype.getAge = function () {\n    return this.age;\n}\n\n// 原型继承 -- 重写原型, toString 为prototype 上的方法。\nParsent.prototype.toString = function () {\n    return `name: ${this.name}, age: ${this.age}`;\n}\n\n// 原型继承 -- 实现\nfunction FirstChild(name, age, identity) {\n    this.identity = identity;\n}\n// 通过new 完成 1、Parsent 的原型继承，prototype 2、Parsent 的属性继承，property； 但是很明显子类无法传参数\nFirstChild.prototype = new Parsent('parent', 45)\n// 可以直接将 Parsent.prototype 赋值给 FirstChild.prototype，但是他不具备属性\n// FirstChild.prototype = Parsent.prototype;\n\nconst firstChild = new FirstChild('firstChild', 18, 'student');\nconsole.log(firstChild.getName()); \nconsole.log(firstChild.getAge());\nconsole.log(firstChild.toString());\nconsole.log(Child.constructor ,firstChild instanceof Parsent); // true\n\n// failed!!"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "parent",
+                                "45",
+                                "name: parent, age: 45",
+                                "[Function: Function] true",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// function Parsent(name, age) {\n//     this.name = name;\n//     this.age = age;\n//     this.say = function () {\n//         console.log(\"hello\");\n//         return true;\n//     };\n// }\n\n// // 原型继承 -- 扩展原型\n// Parsent.prototype.getName = function () {\n//     return this.name;\n// };\n\n// Parsent.prototype.getAge = function () {\n//     return this.age;\n// };\n\n// // 原型继承 -- 重写原型, toString 为prototype 上的方法。\n// Parsent.prototype.toString = function () {\n//     return `name: ${this.name}, age: ${this.age}`;\n// };\n\n// 构造函数继承 -- 通过 call 或 apply\n// Child 为构造函数，所以叫构造函数继承\nfunction SeconedChild(name, age, identity) {\n    // call 或 apply 会改变 this 的指向，将父类的属性绑定到子类上,完成父类到子类的属性继承\n    // Parsent.call(this, name, age);\n    Parsent.apply(this, Array.prototype.slice.call(arguments));\n    this.identity = identity;\n}\n\n// 让我们猜猜看，父类的方法是否还在\nconst child = new SeconedChild(\"child\", 18, \"student\");\n// console.log(child.getName());\nconsole.log(child.say());\n\n\n// Failed!!\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "hello",
+                                "undefined",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// 两者组合继承\nfunction ThirdChild(name, age, identity) {\n    Parsent.call(this, name, age);\n    this.identity = identity;\n}\n\n// TS 不通过，浪费空间，这块内存将不被释放\nThirdChild.prototype = new Parsent();\n// 通过 Object.create() 创建一个新对象，将父类的原型赋值给这个新对象，这样就不会有多余的属性\n// 很巧妙 仅仅将显性属性继承，而不会继承父类的属性\n// 远古不考虑面向对象编程、考虑的是面向过程。\n// ThirdChild.prototype = Object.create(Parsent.prototype);\nThirdChild.prototype.constructor = ThirdChild;\n\nconst thirdChild = new ThirdChild('thirdChild', 18, 'student');\nconsole.log(thirdChild.getName());\nconsole.log(thirdChild.getAge());\nconsole.log(thirdChild.toString());\nconsole.log(thirdChild instanceof Parsent); // true\nconsole.log(thirdChild.say());\n\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "thirdChild",
+                                "18",
+                                "name: thirdChild, age: 18",
+                                "true",
+                                "hello",
+                                "undefined",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "### 现代"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "class ParsentByClass {\n    constructor(name, age) {\n        this.name = name;\n        this.age = age;\n    }\n}\n\nclass ChildByClass extends ParsentByClass {\n    constructor(name, age, job) {\n        super(name, age);\n        this.job = job;\n    }\n}\n\nconsole.log(Object.create(Parsent));\nconsole.log(Object.create(Parsent.prototype));"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "[Function: Parsent]",
+                                "{",
+                                "  getName: [Function (anonymous)],",
+                                "  getAge: [Function (anonymous)],",
+                                "  toString: [Function (anonymous)]",
+                                "}",
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stderr",
+                            "value": [
+                                "Debugger ending on ws://127.0.0.1:36367/fc0a3e0e-d5ec-4742-b1c1-4166a74e8014",
+                                "For help, see: https://nodejs.org/en/docs/inspector",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "# JS 模块化历史\n\n## 模块化的尝试\n\n![alt text](image.png)\n\n某个不知名的作者做的第一次尝试。。。\nhttps://www.ruanyifeng.com/blog/2012/11/require_js.html\n\n同一时间，有了node ，它使用的是 commonjs\n\n很详细：\nhttps://www.cnblogs.com/echoyya/p/14577243.html\n\n### 那些年 - 牛马蛇神的妖娆姿态 - 封装\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// IIFE\n// 那个时期，undefined 不是规范的关键字，可以被重写，所以传入 undefined 保证 undefined 的值是 undefined\n(function (global,undefined) {\n    // 判断环境\n    if (typeof window === 'object') {\n        console.log('window');\n    } else if(typeof global === 'object') {\n        console.log('global');\n    }\n    var module\n    // 考虑兼容\n    if (typeof module === 'object' && typeof module.exports === 'object') {\n        module = module.exports;\n    }else if (typeof define === 'function' && define.amd) {\n        module = define('module', [], function () {\n            return module;\n        });\n    }\n    // code something...\n    console.log('IIFE');\n    return {\n        define: function () {\n            console.log('define');\n        }\n    }\n})(this);\n\n// AMD、CMD 定义、引用模块\n// AMD\ndefine(['module1', 'module2'], function (module1, module2) {\n    // code something...\n    console.log('AMD');\n    return {}\n});\n// CMD\ndefine(function (require, exports, module) {\n    var module1 = require('module1');\n    var module2 = require('module2');\n    // code something...\n    console.log('CMD');\n    module.exports = {}\n});"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## 早期 - 规范前期\n\n### CommonJS"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// CommonJS (CJS)\nconst module1 = require('module1');\n// code something...\nconsole.log('CommonJS');\nlet a = module1\nmodule.exports = {\n    a:a\n}"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "# JS 引擎\n\n## 事件机制\n"
+            ],
+            "outputs": []
+        }
+    ]
+}

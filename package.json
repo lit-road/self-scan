@@ -1,5 +1,8 @@
 {
 	"devDependencies": {
 		"acorn": "^8.11.3"
+	},
+	"dependencies": {
+		"@jest/globals": "^29.7.0"
 	}
 }

@@ -1,0 +1,18 @@
+{
+    "cells": [
+        {
+            "language": "markdown",
+            "source": [
+                "# 前端优化 QPS\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// \nclass optimizingQPS{\n    // 单例模式、类访问控制\n    private static instance: optimizingQPS;\n    // 实例共享\n    private maxQPS: number;\n    private maxConcurrent: number;\n    private maxConcurrentForSameKey: number;\n    private tasks: any[];\n    public static getInstance(){\n        if(!this.instance){\n            this.instance = new optimizingQPS();\n        }\n        return this.instance;\n    }\n    public constructor(maxQPS: number = 1000, maxConcurrent: number = 1000, maxConcurrentForSameKey: number = 100){\n        this.maxQPS = maxQPS;\n        this.maxConcurrent = maxConcurrent;\n        this.maxConcurrentForSameKey = maxConcurrentForSameKey;\n        this.tasks = [];\n    }\n    // 入口\n    public addTask(task: any){\n        this.tasks.push(task);\n        this.run();\n    }\n    // 任务执行\n    private run(){\n        let task = this.tasks.shift();\n        if(!task){\n            return;\n        }\n        let key = task.key;\n        let count = 0;\n        let sameKeyCount = 0;\n        for(let i = 0; i < this.tasks.length; i++){\n            if(this.tasks[i].key === key){\n                sameKeyCount++;\n            }\n            count++;\n        }\n        if(count > this.maxQPS || sameKeyCount > this.maxConcurrentForSameKey){\n            this.tasks.push(task);\n            return;\n        }\n        task.run();\n        this.run();\n    }\n\n}"
+            ],
+            "outputs": []
+        }
+    ]
+}
