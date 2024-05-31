@@ -1,0 +1,12 @@
+{
+    "name": "wujie",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "pnpm -r --stream run start"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
