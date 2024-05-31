@@ -293,6 +293,13 @@
         {
             "language": "markdown",
             "source": [
+                "# JS 规范相关\n\n## 规范阶段\n\nStage 0/Strawperson： 潜在的可能被纳入规范的一些想法。\nStage 1/Proposal：为该想法设想一些适用场景，可能的 case。提出解决实现方案以及可能的变更。\nStage 2/Draft：经过上一步验证讨论后，这一阶段开始起草语言层面的语义语法，准备正式的规范文档。\nStage 3/Candidate：提案进入到了候选阶段。开始接收一些反馈对提案进行完善。\nStage 4/Finished：可以被纳入到正式的 ECMAScript 语言规范中了。\n\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "markdown",
+            "source": [
                 "# JS 引擎\n\n## 事件机制\n"
             ],
             "outputs": []

@@ -16,7 +16,7 @@
                 {
                     "items": [
                         {
-                            "mime": "application/vnd.code.notebook.stderr",
+                            "mime": "application/vnd.code.notebook.stdout",
                             "value": [
                                 "MyPromise {",
                                 "  status: 'pending',",
@@ -25,25 +25,49 @@
                                 "  value: undefined,",
                                 "  reason: undefined",
                                 "}",
-                                "resolve success",
-                                "TypeError: Cannot read properties of undefined (reading 'status')",
-                                "    at resolve (<Cell 2> [65, 12])",
-                                "    at Timeout._onTimeout (<Cell 2> [103, 15])",
-                                "    at listOnTimeout (node:internal/timers:573:17)",
-                                "    at processTimers (node:internal/timers:514:7)",
+                                "success 第一次",
+                                "结束 this MyPromise {",
+                                "  status: 'fulfilled',",
+                                "  onFulfilledCallbacks: [ [Function (anonymous)], [Function (anonymous)] ],",
+                                "  onRejectedCallbacks: [ undefined, undefined ],",
+                                "  value: 'success123',",
+                                "  reason: undefined",
+                                "}",
+                                "success123 第二次",
+                                "结束 this MyPromise {",
+                                "  status: 'fulfilled',",
+                                "  onFulfilledCallbacks: [ [Function (anonymous)], [Function (anonymous)] ],",
+                                "  onRejectedCallbacks: [ undefined, undefined ],",
+                                "  value: 'success123456',",
+                                "  reason: undefined",
+                                "}",
                                 ""
                             ]
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "language": "markdown",
+            "source": [
+                "## Proxy\n"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// Proxy\nconst obj2 = {\n  name: \"张三\",\n  age: 18,\n};\n\nconst proxy = new Proxy(obj2, {\n  get(target, key) {\n    console.log(\"get\", target, key);\n    return target[key];\n  },\n  set(target, key, value) {\n    console.log(\"set\", target, key, value);\n      target[key] = value;\n      return value;\n  },\n});\n\n// obj2.name = \"李四\";\nproxy.name = \"李四\";\nconsole.log(proxy);\n"
+            ],
+            "outputs": [
                 {
                     "items": [
                         {
-                            "mime": "application/vnd.code.notebook.stderr",
+                            "mime": "application/vnd.code.notebook.stdout",
                             "value": [
-                                "<Cell 2> :58",
-                                "                }",
-                                "                 ^",
+                                "set { name: '张三', age: 18 } name 李四",
+                                "{ name: '李四', age: 18 }",
                                 ""
                             ]
                         }
