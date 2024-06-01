@@ -1,0 +1,28 @@
+{
+    "name": "@project/cli",
+    "version": "0.0.0-alpha",
+    "description": "",
+    "main": "index.js",
+    "bin": {
+        "project": "./bin/cmd"
+    },
+    "scripts": {
+        "compile": "babel src -d dist --watch",
+        "prepublish": "npm run compile",
+        "alpha": "npm version prerelease --preid=alpha && git push origin master --tags",
+        "patch": "npm version patch && git push origin master --tags",
+        "minor": "npm version minor && git push origin master --tags"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "babel-cli": "^6.26.0"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    }
+}
